@@ -52,8 +52,8 @@ class Set{
 		//destructor
 		~Set( );
 		//operators overloaded
-		//Set & operator=( const Set & rhs );
-		//Set & operator=( Set && rhs );
+		Set & operator=( const Set & rhs );
+		Set & operator=( Set && rhs );
 		//Set operator+( const Set & rhs ) const; //set union
 		//Set operator*( const Set & rhs ) const; //set intersection
 		//methods
@@ -63,7 +63,8 @@ class Set{
 		
 		//display on out all elements in the set between {..}
 		void print( ostream & out = cout ) const;		
-		//void setToEmptySet( );
+		
+		void setToEmptySet( );
 		
 		//methods to work with individual elements of a set
 		void insert( const EType & x );
@@ -84,8 +85,20 @@ template <typename EType>
 Set<EType>::Set() : mFirst(new Node()), mSize(0) {}
 
 template <typename EType>
-Set<EType>::Set( const Set & rhs ) : mSize(rhs.mSize), mFirst(new Node()) {	
-	mFirst = rhs->mFirst;
+Set<EType>::Set( const Set & rhs ) {
+	mFirst = new Node();
+	
+	Node *currentLhs = mFirst;
+	Node *currentRhs = rhs.mFirst;
+	
+	while(true) {
+		Node *temp = new Node(currentRhs->mData);
+		currentLhs->mNext = temp;		
+		++mSize;
+		currentLhs = currentLhs->mNext;
+		if(currentRhs->mNext == nullptr) { break; }
+		currentRhs = currentRhs->mNext;
+	}	
 }
 
 template <typename EType>
@@ -100,13 +113,40 @@ Set<EType>::Set(Set &&rhs) {
 template <typename EType>
 Set<EType>::~Set() {
 	delete mFirst;
+	mSize = 0;
 }
-/*
-Set & operator=( const Set & rhs ) {
-	
-	
+
+template <typename EType>
+const Set & Set<EType>::operator=( const Set & rhs ) {
+	if(this != &rhs) {
+		delete[] this->mFirst;
+		
+		this->mFirst = new Node();
+		Node *currentLhs = this->mFirst;
+		Node *currentRhs = rhs.mFirst;
+		
+		while(true) {
+			Node *temp = new Node(current->mData);
+			current->mNext = temp;
+			currentLhs = currentLhs->mNext;
+			++mSize;
+			if(currentRhs->mNext == nullptr) { break; }
+			currentRhs = currentRhs->mNext;			
+		}		
+	}
+	return *this;
 }
-*/
+
+template <typename EType>
+Set & Set<EType>::operator=( Set && rhs ) {
+	delete this->mFirst;
+	
+	this->mFirst = rhs.mFirst;
+	rhs.mFirst = nullptr;
+	
+	return *this;	
+}
+
 template <typename EType>
 bool Set<EType>::isElement( const EType & x ) const {
 	Node *temp = mFirst;
@@ -132,22 +172,29 @@ int Set<EType>::getSize( ) const {
 	return mSize;
 }
 
-
-//	Add to the back not the front
+//	Should an exception be thrown when the list is empty?
 template <typename EType>
 void Set<EType>::print(ostream &out) const {
 	Node *current = mFirst;	
 	while(true) {
-		if(current == nullptr) { break; }
-		cout << current->mData;
 		current = current->mNext;
+		if(current == nullptr) { break; }
+		cout << current->mData;		
 	}
 }
 
-// Issue with mFirst. The first node in the list had a 0 and need to be written over.
 template <typename EType>
-void Set<EType>::insert(const EType &x) {
-	Node *current = mFirst;
+void Set<EType>::setToEmptySet( ) {
+	Node *temp = new Node();
+	mFirst = temp;
+	mSize = 0;
+}
+
+// Issue with mFirst. The first node in the list had a 0 and need to be written over.
+//	It has been fixed by not printing out mFirst->mData which is not the correct patch.
+template <typename EType>
+void Set<EType>::insert(const EType &x) {	
+	Node *current = mFirst;		
 	while(true) {
 		if(current->mNext == nullptr) {
 			Node *temp = new Node(x);
@@ -173,12 +220,7 @@ void Set<EType>::remove(const EType &x) {
 	if(current == nullptr) {
 		throw NonExistingElem("Element does not exist");
 	}
-	if(prev == nullptr) {
-		mFirst = current->mNext;
-	}
-	else {
-		prev->mNext = current->mNext;
-	}
+	prev->mNext = current->mNext;
 	delete current;
 	--mSize;
 }

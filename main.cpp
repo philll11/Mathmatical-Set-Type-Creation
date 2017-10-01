@@ -28,11 +28,14 @@ int main( ){
 		s2.insert( 4 );
 		s2.insert( 2 );
 		s2.insert( 6 );
+		cout << "S2: " << s1 << ", size = " << s1.getSize( ) << endl;
+		Set<int> s3(s1);
 		//s1.remove( 10 );
-		
+		//s2.setToEmptySet();
 		
 		cout << "S1: " << s1 << ", size = " << s1.getSize( ) << endl;
-		cout << "S2: " << s2 << ", size = " << s2.getSize( ) << endl;
+		//cout << "S2: " << s2 << ", size = " << s2.getSize( ) << endl;
+		cout << "S3: " << s3 << ", size = " << s3.getSize( ) << endl;
 		/*
 		Set<int> s3 = s1+ s2; //union
 		Set<int> s4 = s1* s2; //intersection
