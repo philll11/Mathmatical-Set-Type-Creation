@@ -25,8 +25,6 @@ const char* RemoveFromEmpty::what() const noexcept {
 }
 
 class NonExistingElem : public exception{
-//to be thrown when the element to be removed is not found in
-//the set --------code missing 
 	public:
 		NonExistingElem(string _mMessage); 
 		virtual const char* what() const noexcept;
@@ -52,18 +50,17 @@ class Set{
 		//destructor
 		~Set( );
 		//operators overloaded
-		Set & operator=( const Set & rhs );
-		Set & operator=( Set && rhs );
-		//Set operator+( const Set & rhs ) const; //set union
-		//Set operator*( const Set & rhs ) const; //set intersection
+		const Set<EType> & operator=( const Set & rhs );
+		Set<EType> & operator=( Set && rhs );
+		Set<EType> operator+( const Set & rhs ) const; //set union
+		Set operator*( const Set & rhs ) const; //set intersection
 		//methods
 		bool isElement( const EType & x ) const;
 		bool isEmpty( ) const;
 		int getSize( ) const;
 		
 		//display on out all elements in the set between {..}
-		void print( ostream & out = cout ) const;		
-		
+		void print( ostream & out = cout ) const;	
 		void setToEmptySet( );
 		
 		//methods to work with individual elements of a set
@@ -80,34 +77,27 @@ class Set{
 		Node *mFirst;
 		int mSize; // to have an efficient getSize().
 };
-//Write the definitions of all Set function members here:
+
 template <typename EType>
-Set<EType>::Set() : mFirst(new Node()), mSize(0) {}
+Set<EType>::Set() : mFirst(nullptr), mSize(0) {}
 
 template <typename EType>
 Set<EType>::Set( const Set & rhs ) {
-	mFirst = new Node();
-	
-	Node *currentLhs = mFirst;
-	Node *currentRhs = rhs.mFirst;
-	
-	while(true) {
-		Node *temp = new Node(currentRhs->mData);
-		currentLhs->mNext = temp;		
-		++mSize;
-		currentLhs = currentLhs->mNext;
-		if(currentRhs->mNext == nullptr) { break; }
-		currentRhs = currentRhs->mNext;
-	}	
+	mFirst = nullptr;
+	mSize = 0;
+	Node *currentNode = rhs.mFirst;	
+	while(currentNode != nullptr) {
+		this->insert(currentNode->mData);
+		currentNode = currentNode->mNext;			
+	}
 }
 
 template <typename EType>
 Set<EType>::Set(Set &&rhs) {
 	mSize = rhs.mSize;
-	mFirst = rhs->mFrist;
-	
+	mFirst = rhs.mFirst;
 	rhs.mSize = 0;
-	rhs->mFirst = nullptr;
+	rhs.mFirst = nullptr;
 }
 
 template <typename EType>
@@ -117,51 +107,84 @@ Set<EType>::~Set() {
 }
 
 template <typename EType>
-const Set & Set<EType>::operator=( const Set & rhs ) {
+const Set<EType>& Set<EType>::operator=( const Set & rhs ) {
 	if(this != &rhs) {
-		delete[] this->mFirst;
-		
-		this->mFirst = new Node();
-		Node *currentLhs = this->mFirst;
-		Node *currentRhs = rhs.mFirst;
-		
-		while(true) {
-			Node *temp = new Node(current->mData);
-			current->mNext = temp;
-			currentLhs = currentLhs->mNext;
-			++mSize;
-			if(currentRhs->mNext == nullptr) { break; }
-			currentRhs = currentRhs->mNext;			
-		}		
+		this->setToEmptySet();
+		mSize = 0;
+		Node *currentNode = rhs.mFirst;		
+		while(currentNode != nullptr) {
+			this->insert(currentNode->mData);
+			currentNode = currentNode->mNext;			
+		}
 	}
 	return *this;
 }
 
 template <typename EType>
-Set & Set<EType>::operator=( Set && rhs ) {
-	delete this->mFirst;
-	
-	this->mFirst = rhs.mFirst;
+Set<EType> & Set<EType>::operator=( Set && rhs ) {
+	this->setToEmptySet();	
+	mFirst = rhs.mFirst;
+	mSize = rhs.mSize;	
 	rhs.mFirst = nullptr;
-	
+	rhs.mSize = 0;	
 	return *this;	
 }
 
 template <typename EType>
-bool Set<EType>::isElement( const EType & x ) const {
-	Node *temp = mFirst;
-	while(temp->mNext != nullptr) {
-		if(temp->mData == x) {
+Set<EType> Set<EType>::operator+( const Set & rhs ) const {	
+	Set *tempSet = new Set();
+	Node *currentLhs = this->mFirst;	
+	while(currentLhs != nullptr) {
+		tempSet->insert(currentLhs->mData);
+		currentLhs = currentLhs->mNext;
+	}	
+	Node *currentRhs = rhs.mFirst;	
+	while(currentRhs != nullptr) {
+		tempSet->insert(currentRhs->mData);
+		currentRhs = currentRhs->mNext;
+	}
+	return *tempSet;
+}
+
+/* Works but produces a warning
+template <typename EType>
+Set<EType> Set<EType>::operator+( const Set & rhs ) const {
+	Node *currentNode = rhs.mFirst;	
+	while(currentNode != nullptr) {
+		this->insert(currentNode->mData);
+		currentNode = currentNode->mNext;
+	}
+	return *this;
+}
+*/
+template <typename EType>
+Set<EType> Set<EType>::operator*( const Set & rhs ) const {
+	Set *tempSet = new Set();
+	Node *currentNode = rhs.mFirst;
+	while(currentNode != nullptr) {
+		if(isElement(currentNode->mData)) {
+			tempSet->insert(currentNode->mData);		
+		}		
+		currentNode = currentNode->mNext;
+	}
+	return *tempSet;
+}
+
+template <typename EType>
+bool Set<EType>::isElement( const EType & x ) const {	
+	Node *currentNode = mFirst;
+	while(currentNode != nullptr) {		
+		if(currentNode->mData == x) {
 			return true;
 		}
-		temp = temp->mNext;			
+		currentNode = currentNode->mNext;			
 	}
 	return false;
 }
 
 template <typename EType>
 bool Set<EType>::isEmpty( ) const {
-	if(mFirst->mNext == nullptr) {
+	if(mFirst == nullptr) {
 		return true;
 	}
 	return false;
@@ -172,56 +195,45 @@ int Set<EType>::getSize( ) const {
 	return mSize;
 }
 
-//	Should an exception be thrown when the list is empty?
 template <typename EType>
 void Set<EType>::print(ostream &out) const {
-	Node *current = mFirst;	
-	while(true) {
-		current = current->mNext;
-		if(current == nullptr) { break; }
-		cout << current->mData;		
+	Node *currentNode = mFirst;	
+	while(currentNode != nullptr) {
+		cout << currentNode->mData;
+		currentNode = currentNode->mNext;
 	}
 }
 
 template <typename EType>
 void Set<EType>::setToEmptySet( ) {
-	Node *temp = new Node();
-	mFirst = temp;
+	delete[] mFirst;
+	mFirst = nullptr;
 	mSize = 0;
 }
 
-// Issue with mFirst. The first node in the list had a 0 and need to be written over.
-//	It has been fixed by not printing out mFirst->mData which is not the correct patch.
 template <typename EType>
-void Set<EType>::insert(const EType &x) {	
-	Node *current = mFirst;		
-	while(true) {
-		if(current->mNext == nullptr) {
-			Node *temp = new Node(x);
-			current->mNext = temp;
-			++mSize;
-			break;
-		} else {
-			current = current->mNext;
-		}
+void Set<EType>::insert(const EType &x) {
+	if(!isElement(x)) {
+		Node *currentNode = new Node(x);
+		currentNode->mNext = mFirst;
+		++mSize;
+		mFirst = currentNode;
 	}
 }
 
 template <typename EType>
 void Set<EType>::remove(const EType &x) {
-	if(mFirst->mNext == nullptr) { throw RemoveFromEmpty("List is empty"); }
-	Node *current = mFirst;
-	Node *prev = nullptr;	
-	while(current != nullptr) {
-		if(current->mData == x) { break; }
-		prev = current;
-		current = current->mNext;
+	if(mFirst == nullptr) { throw RemoveFromEmpty("List is empty"); }
+	Node *currentNode = mFirst;
+	Node *prevNode = nullptr;	
+	while(currentNode != nullptr) {
+		if(currentNode->mData == x) { break; }
+		prevNode = currentNode;
+		currentNode = currentNode->mNext;
 	}
-	if(current == nullptr) {
-		throw NonExistingElem("Element does not exist");
-	}
-	prev->mNext = current->mNext;
-	delete current;
+	if(currentNode == nullptr) { throw NonExistingElem("Element does not exist"); }
+	prevNode->mNext = currentNode->mNext;
+	delete currentNode;
 	--mSize;
 }
 
@@ -232,6 +244,12 @@ template <typename EType>
 ostream & operator<<(ostream &out, const Set<EType> &rhs) {
 	rhs.print(out);
 	return out;
+}
+
+void info() {
+	cout << "159.234 Assignment 2P1" << endl;
+	cout << "Leonard Phillips   15232331" << endl;
+	cout << endl;
 }
 
 #endif
